@@ -1,0 +1,69 @@
+1. PIR (Passive Infrared)
+2. IR 
+3. Serial port communication
+/* UART - Universal Asynchronous Receiver-Transmitter */
+- data is transferred serially bit by bit
+- at a pre-defined baud rate (bits per second)
+- Three interfaces: UART0 (reserved), UART1, UART2
+/* SPI / I2C - synchronous */
+Serial.begin(baud_rate);
+Serial.println(message);
+Serial.available();
+Serial.read();
+
+4. Light Dependent Resistor (has sensitivity adjuster)
+- has both analog & digital inputs.
+
+# in lab 4, serial communication and light dependent resistor
+Lab 3
+
+5. DHT11
+
+#include <DHT.h>
+#define DHT11_PIN 21
+
+DHT dht11 (DHT11_PIN, DHT11); 
+
+dht11.begin();
+
+dht11.readHumidity();
+dht11.readTemperature(); // Celsius
+dht11.readTemperature(true); // Fahrenheit
+isnan();
+To convert *C to *F:
+F = C * 9 / 5 + 32;
+
+6. LM35 sensor:
+- it is also a temperature sensor
+#define ADC_VREF_mV 3300.0
+#define ADC_RESOLUTION 4096.0
+#define PIN_LM35 36 // you can just put 13 - ADC0
+
+analogSetAttenudation(ADC_11db);
+
+int adcVal = analogRead(PIN_LM35);
+float milliVolt = adcVal * (ADC_VREF_mV / ADC_RESOLUTION);
+float tempC = milliVolt / 10;
+float tempF = tempC * 9 / 5 + 32; 
+
+7. Controlling LED using Potentiometer
+map() function, commonly used in arduino
+map(sensorValue, 0, 1023, 0, 255);
+sensorValue: This is the input value that you want to re-map. In the context of Arduino, this often represents a raw analog reading from a sensor, which typically ranges from 0 to 1023 (for a 10-bit Analog-to-Digital Converter).
+0: This is the lower bound of the input range (sensorValue).
+1023: This is the upper bound of the input range (sensorValue).
+0: This is the lower bound of the desired output range.
+255: This is the upper bound of the desired output range.
+
+potentiometer input analog value read through PIN 34
+led output analog value read throught PIN 16 -- GPIO 16
+LAB 2
+----
+8. PIR & IR
+
+Detection Method:
+IR sensors: (often active IR) emit infrared light and detect the reflected light from objects. 
+PIR sensors: (passive IR) detect changes in infrared radiation (heat) emitted by objects, without emitting their own infrared light. 
+Object Detection:
+IR sensors can detect the presence of an object based on reflected light, regardless of whether it's moving. 
+PIR sensors are primarily used to detect motion, as they are sensitive to changes in heat signatures caused by movement. 
