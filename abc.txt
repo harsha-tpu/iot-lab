@@ -1,0 +1,558 @@
+# Import Raspberry Pi GPIO library
+import RPi.GPIO as GPIO
+from time import sleep  # ← this is the correct import
+
+GPIO.setwarnings(False)          # Ignore warnings
+GPIO.setmode(GPIO.BOARD)         # Use physical pin numbering
+
+# Set pin 18 as OUTPUT and initialize it LOW
+GPIO.setup(18, GPIO.OUT, initial=GPIO.LOW)
+
+while True:
+    GPIO.output(18, GPIO.HIGH)   # Turn ON
+    sleep(1)
+    GPIO.output(18, GPIO.LOW)    # Turn OFF
+    sleep(1)
+
+print("Running...")  # ← This line will NEVER execute (infinite loop above)
+
+=---------------------------------
+
+
+from gpiozero import InputDevice 
+from time import sleep
+
+# Initialize the sensor as a digital input device on GPIO 4 
+sensor = InputDevice(4)
+
+while True:
+    if sensor.is_active:
+        print("No obstacle detected")   # Prints when no obstacle is detected
+    else:
+        print("Obstacle detected")      # Prints when an obstacle is detected
+    sleep(1)
+
+-------------------------
+
+from picamera import PiCamera
+import time
+
+camera = PiCamera()            # Create a PiCamera object (turns on the camera)
+time.sleep(2)                  # Let camera warm up (important to avoid dark frame)
+
+camera.resolution = (1280, 720)  # Set HD resolution (1280x720)
+camera.vflip = True              # Flips video vertically (use if camera is upside down)
+camera.contrast = 10             # Adjusts contrast level
+
+# Generate unique filename using current timestamp
+file_name = "/home/pi/Pictures/video_" + str(time.time()) + ".h264"
+
+print("Start recording...")
+camera.start_recording(file_name)  # Start recording to that filename
+camera.wait_recording(5)           # Record for 5 seconds
+camera.stop_recording()            # Stop recording
+print("Done.")
+
+------------------------------------
+
+from picamera2 import Picamera2, Preview
+from time import sleep
+from libcamera import Transform
+
+picam2 = Picamera2()
+
+no = int(input("Enter the number of photos to take: "))
+
+picam2.start_preview(Preview.QTGL, transform=Transform(hflip=True, vflip=True))
+picam2.start()
+
+for i in range(1, no + 1):
+    picam2.start_and_capture_file(f"/home/project/Pictures/new_image_{i}.jpg")
+    sleep(2)  # wait 2 seconds before taking next photo
+
+picam2.stop_preview()
+picam2.close()
+
+
+----------------------------------------
+
+from picamera2 import Picamera2, Preview
+from time import sleep
+from libcamera import Transform
+import RPi.GPIO as GPIO
+
+picam2 = Picamera2()
+sensorpin = 11  # IR sensor connected to GPIO Pin 11
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BOARD)   # Using physical pin numbers
+GPIO.setup(sensorpin, GPIO.IN)
+
+while True:
+    if GPIO.input(sensorpin) == 0:  # 0 means object detected for most IR sensors
+        print("Object detected! Capturing image...")
+
+        picam2.start_preview(Preview.QTGL, transform=Transform(hflip=True, vflip=True))
+        picam2.start()
+        picam2.start_and_capture_file("/home/project/Pictures/ir_cap_img.jpg")
+        sleep(2)
+        picam2.stop_preview()
+        picam2.stop()
+
+    else:
+        print("No object detected")
+        sleep(2)
+
+--------------------------------------------------
+
+
+from libcamera import Transform
+from picamera2 import Picamera2, Preview
+from picamera2.encoders import H264Encoder
+import RPi.GPIO as GPIO
+from time import sleep
+
+picam2 = Picamera2()
+sensorpin = 11
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(sensorpin, GPIO.IN)
+
+video_config = picam2.create_video_configuration()
+picam2.configure(video_config)
+
+while True:
+    if GPIO.input(sensorpin) == 0:   # Object detected
+        print("Object detected! Starting video recording...")
+        encoder = H264Encoder(10000000)
+
+        picam2.start_preview(Preview.QTGL, transform=Transform(hflip=True, vflip=True))
+        picam2.start_recording(encoder, '/home/project/Videos/object_video.h264')
+
+        sleep(5)  # Record for 5 seconds
+        picam2.stop_recording()
+        picam2.stop_preview()
+        print("Recording saved.")
+
+    else:
+        print("No object detected")
+        sleep(2)
+------------------------------------------
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "wifi_name";
+const char* password = "pswd";
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  Serial.println("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.print("Connected! IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    
+    http.begin("http://192.168.243.153:8000/get-sensor?temperature=243");
+    int httpCode = http.GET();
+
+    if (httpCode > 0) {
+      String payload = http.getString();
+      Serial.println(httpCode);
+      Serial.println(payload);
+    } else {
+      Serial.println("HTTP request failed");
+    }
+
+    http.end();
+  }
+
+  delay(10000); // Send again after 10sec
+}
+----------------
+from flask import Flask, request
+
+app = Flask(__name__)
+stored_data = []
+
+@app.route('/')
+def index():
+    return 'OK', 200
+
+@app.route('/get-sensor', methods=['GET'])
+def receive_data():
+    temperature = request.args.get('temperature')
+    stored_data.append(temperature)
+    return f"Received: {temperature}", 200
+
+@app.route('/get')
+def display_data():
+    result = '<h2>Received Sensor Data:</h2><ul>'
+    for item in stored_data:
+        result += f'<li>{item}</li>'
+    result += '</ul>'
+    return result
+
+if __name__ == '__main__':
+    app.run(debug=True, port=8000, host='0.0.0.0')
+
+---------------
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "wifi_name";
+const char* password = "pswd";
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  Serial.println("Connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.print("Connected to WiFi! IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println("Sending data every 10 seconds...");
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("http://192.168.243.153:8000/get-sensor?temperature=243");
+
+    int httpCode = http.GET();
+
+    if (httpCode > 0) {
+      String payload = http.getString();
+      Serial.println(httpCode);
+      Serial.println(payload);
+    } else {
+      Serial.println("Error on HTTP request");
+    }
+
+    http.end();
+  }
+  delay(10000);   // send every 10 seconds
+}
+
+--------------------------
+
+from flask import Flask, request
+
+app = Flask(__name__)
+l = []   # list to store received temperature values
+
+@app.route('/')
+def index():
+    return 'OK', 200
+
+@app.route('/get-sensor', methods=['GET'])
+def data():
+    temperature = request.args.get('temperature')
+    l.append(temperature)
+    return f"Received temperature: {temperature}", 200
+
+@app.route('/get')
+def data1():
+    sensor_data = '<h2>Received Sensor Data:</h2><ul>'
+    for item in l:
+        sensor_data += f'<li>{item}</li>'
+    sensor_data += '</ul>'
+    return sensor_data
+
+if __name__ == '__main__':
+    app.run(debug=True, port=8000, host='0.0.0.0')
+
+----------------------
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+#define Ledpin 13
+#define IRpin 14
+
+const char* ssid = "ssid";
+const char* password = "password";
+const char* mqtt_server = "192.168.43.218";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+char* tempString;
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  pinMode(Ledpin, OUTPUT);
+  pinMode(IRpin, INPUT);
+
+  Serial.println("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected. IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  client.setServer(mqtt_server, 1883);
+
+  while (!client.connected()) {
+    Serial.println("Connecting to MQTT...");
+    if (client.connect("espClient")) {
+      Serial.println("MQTT Connected.");
+    } else {
+      Serial.print("Failed. State ");
+      Serial.println(client.state());
+      delay(2000);
+    }
+  }
+}
+
+void loop() {
+  bool IRstatus = digitalRead(IRpin);
+
+  if (IRstatus) {
+    digitalWrite(Ledpin, LOW);
+    tempString = "LED OFF";
+  } else {
+    digitalWrite(Ledpin, HIGH);
+    tempString = "LED ON";
+  }
+
+  client.publish("ESP32/Temperaturedataread", tempString);
+  delay(1000);
+}
+
+------------------------
+#include <Wire.h>
+
+const int ledPin = 13;
+
+void setup() {
+  Wire.begin(0x08);              // Arduino Slave address = 0x08
+  Wire.onReceive(receiveEvent);  // Function to handle incoming data
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+}
+
+void receiveEvent(int howMany) {
+  while (Wire.available()) {
+    char c = Wire.read();       // Read 1 byte from Pi
+    digitalWrite(ledPin, c);    // Turn LED ON (1) or OFF (0)
+  }
+}
+
+void loop() {
+  delay(100);  // Nothing else, waits for Pi
+}
+---------------------
+from smbus import SMBus
+
+addr = 0x08  # Arduino I2C address
+bus = SMBus(1)
+
+print("Enter 1 for ON or 0 for OFF")
+
+while True:
+    ledstate = input(">>> ")
+
+    if ledstate == "1":
+        bus.write_byte(addr, 0x1)  # LED ON
+    elif ledstate == "0":
+        bus.write_byte(addr, 0x0)  # LED OFF
+    else:
+        print("Exiting...")
+        break
+
+-----------------------------
+// ESP32 -> ThingSpeak (upload LDR value)
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid     = "YOUR_SSID";
+const char* password = "YOUR_PASS";
+
+// ThingSpeak info
+const char* writeAPIKey = "YOUR_WRITE_API_KEY";
+const char* thingspeakHost = "api.thingspeak.com";
+const int   fieldNum = 1;           // field1 in channel
+const int   analogPin = 34;         // LDR connected to GPIO34 (ADC1)
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Connected. IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  // Read LDR (0-4095 on ESP32 ADC)
+  int raw = analogRead(analogPin);
+  float voltage = raw * (3.3 / 4095.0); // optional conversion
+  Serial.printf("LDR raw=%d  V=%.2f\n", raw, voltage);
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = String("http://") + thingspeakHost + "/update?api_key=" + writeAPIKey + "&field" + String(fieldNum) + "=" + String(raw);
+    http.begin(url);
+    int httpCode = http.GET();
+    if (httpCode > 0) {
+      String payload = http.getString();
+      Serial.println("ThingSpeak HTTP code: " + String(httpCode));
+      Serial.println("Response: " + payload);
+    } else {
+      Serial.println("Error sending to ThingSpeak");
+    }
+    http.end();
+  } else {
+    Serial.println("WiFi not connected");
+  }
+
+  delay(15000); // ThingSpeak limit: ~15 seconds between updates
+}
+
+-------------------------
+# Python client to fetch ThingSpeak channel feed in JSON
+import urllib.request
+import json
+
+# Replace with your channel ID and read API key (if private)
+channel_id = "YOUR_CHANNEL_ID"
+read_api_key = "YOUR_READ_API_KEY"  # optional for public channels
+
+url = f"https://api.thingspeak.com/channels/{channel_id}/feeds.json?results=20"
+if read_api_key:
+    url += "&api_key=" + read_api_key
+
+with urllib.request.urlopen(url) as response:
+    data = json.loads(response.read().decode())
+    # Save data to file
+    with open("thingspeak_latest.json", "w") as f:
+        json.dump(data, f, indent=2)
+
+print("Saved JSON to thingspeak_latest.json")
+# You can iterate through data['feeds'] to display fields
+for feed in data.get('feeds', []):
+    print(feed.get('created_at'), feed.get('field1'))
+
+---------------------
+
+// FreeRTOS simple tasks example (ESP32 in Arduino IDE)
+#include <Arduino.h>
+
+const int LED_PIN = 2; // built-in LED on many ESP32 boards
+
+TaskHandle_t Task1Handle = NULL;
+TaskHandle_t Task2Handle = NULL;
+
+void Task1(void *pvParameters) {    // Blink LED task
+  pinMode(LED_PIN, OUTPUT);
+  while (1) {
+    digitalWrite(LED_PIN, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(500));
+    digitalWrite(LED_PIN, LOW);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void Task2(void *pvParameters) {    // Print task
+  while (1) {
+    Serial.println("Task2: Running");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Create tasks
+  xTaskCreate(Task1, "BlinkTask", 2048, NULL, 1, &Task1Handle);
+  xTaskCreate(Task2, "PrintTask", 2048, NULL, 1, &Task2Handle);
+
+  // Example: after 10s suspend Task1, resume later (optional)
+  // vTaskDelay(pdMS_TO_TICKS(10000));
+  // vTaskSuspend(Task1Handle);
+  // vTaskDelay(pdMS_TO_TICKS(5000));
+  // vTaskResume(Task1Handle);
+}
+
+void loop() {
+  // Not used — tasks run independently
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+
+-------------------------------
+#include <Arduino.h>
+
+SemaphoreHandle_t xSemaphore = NULL;
+const int LED_PIN = 2;
+
+void TaskA(void *pvParameters) {
+  while (1) {
+    if (xSemaphoreTake(xSemaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
+      // Critical section
+      digitalWrite(LED_PIN, HIGH);
+      Serial.println("TaskA: LED ON");
+      vTaskDelay(pdMS_TO_TICKS(500));
+      digitalWrite(LED_PIN, LOW);
+      Serial.println("TaskA: LED OFF");
+      xSemaphoreGive(xSemaphore);
+    }
+    vTaskDelay(pdMS_TO_TICKS(200)); // wait before retry
+  }
+}
+
+void TaskB(void *pvParameters) {
+  while (1) {
+    if (xSemaphoreTake(xSemaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
+      // Critical section
+      digitalWrite(LED_PIN, HIGH);
+      Serial.println("TaskB: LED ON");
+      vTaskDelay(pdMS_TO_TICKS(500));
+      digitalWrite(LED_PIN, LOW);
+      Serial.println("TaskB: LED OFF");
+      xSemaphoreGive(xSemaphore);
+    }
+    vTaskDelay(pdMS_TO_TICKS(300));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  xSemaphore = xSemaphoreCreateBinary();
+  // Give the semaphore initially so one task can take it
+  xSemaphoreGive(xSemaphore);
+
+  xTaskCreate(TaskA, "TaskA", 2048, NULL, 1, NULL);
+  xTaskCreate(TaskB, "TaskB", 2048, NULL, 1, NULL);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+-----------------END--------HAVE A  NICE DAY LOL---------------------
