@@ -1,0 +1,734 @@
+int sensorPin = 34; 
+int ledPin = 9; 
+int sensorValue = 0; 
+int outputval=0;
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  sensorValue = analogRead(sensorPin);
+  outputval=map(sensorValue,0,1023,0,255);
+  Serial.println(sensorValue); // print ADC value of analog reading
+  analogWrite(ledPin,outputval);
+  digitalWrite(ledPin, HIGH);
+  delay(sensorValue);
+  digitalWrite(ledPin, LOW);
+  delay(sensorValue);
+}
+  
+--------------------------------------------------------
+int ledPin = 3; // LED connected to digital pin 3
+void setup() {
+// nothing happens in setup
+}
+void loop() {
+  // fade in from min to max in increments of 5 points:
+  for (int fadeValue = 0 ; fadeValue <= 255; fadeValue += 5) {
+  // sets the value (range from 0 to 255):
+  analogWrite(ledPin, fadeValue);
+  // wait for 30 milliseconds to see the dimming effect
+  delay(100);
+  }
+  // fade out from max to min in increments of 5 points:
+  for (int fadeValue = 255 ; fadeValue >= 0; fadeValue -= 5) {
+  // sets the value (range from 0 to 255):
+  analogWrite(ledPin, fadeValue);
+  // wait for 30 milliseconds to see the dimming effect
+  delay(30);
+  }
+}
+---------------------------------------------------------
+// the setup function runs once when you press reset or power the board
+#define Ledpin 13
+#define IRpin 14
+void setup() {
+  // initialize digital pin LED_BUILTIN as an output.
+  pinMode(Ledpin, OUTPUT);
+  pinMode(IRpin, INPUT);
+  Serial.begin(9600);
+}
+// the loop function runs over and over again forever
+void loop() {
+  bool IRstatus = digitalRead(IRpin);
+  if (IRstatus == true) {
+    digitalWrite(Ledpin, LOW);
+    Serial.print(IRstatus);
+  }  // turn the LED on (HIGH is the voltage level)
+  //delay(5000); // wait for a second
+  else {
+    digitalWrite(Ledpin, HIGH);
+    Serial.print(IRstatus);
+  }  // turn the LED off by making the voltage LOW
+  //delay(5000); // wait for a second
+}
+---------------------------------------------------------------
+int IRSensor = 13;
+int MotionSensor = 14;
+const int LED = 4;
+const int LED1 = 12;
+int LEDstate = LOW;
+int Pinstatecurrent = LOW;
+int Pinstateprevious = LOW;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(LED, OUTPUT);
+  pinMode(LED1, OUTPUT);
+  pinMode(IRSensor, INPUT);
+  pinMode(MotionSensor, INPUT);
+}
+void loop() {
+  // put your main code here, to run repeatedly:
+  Pinstateprevious = Pinstatecurrent;
+  Pinstatecurrent = digitalRead(MotionSensor);
+  if (Pinstatecurrent == HIGH && Pinstateprevious == LOW) {
+    Serial.println("Motion Detected");
+    digitalWrite(LED, HIGH);
+    delay(3000);
+    int statussensor = digitalRead(IRSensor);
+    if (statussensor == 1) {
+      digitalWrite(LED1, LOW);
+      Serial.println("Person detected but height not matched");
+    } else {
+      digitalWrite(LED1, HIGH);
+      Serial.println("Person detected and height matched");
+      delay(3000);
+    }
+  }
+  if (Pinstateprevious == Pinstatecurrent) {
+    Serial.println("No Motion Detected");
+    digitalWrite(LED, LOW);
+    digitalWrite(LED1, LOW);
+  }
+}
+
+---------------------------------------------------------------
+#include "DHT.h"
+#define DHTPIN 13 
+#define DHTTYPE DHT11 
+DHT dht(DHTPIN, DHTTYPE);
+void setup() {
+  Serial.begin(9600);
+  Serial.println(F("DHTxx test!"));
+  dht.begin();
+}
+void loop() {
+  delay(2000);
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  float f = dht.readTemperature(true);
+  if (isnan(h) || isnan(t) || isnan(f)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+  float hif = dht.computeHeatIndex(f, h);
+  float hic = dht.computeHeatIndex(t, h, false);
+  Serial.print(F("Humidity: "));
+  Serial.print(h);
+  Serial.print(F("% Temperature: "));
+  Serial.print(t);
+  Serial.print(F("°C "));
+  Serial.print(f);
+  Serial.print(F("°F Heat index: "));
+  Serial.print(hic);
+  Serial.print(F("°C "));
+  Serial.print(hif);
+  Serial.println(F("°F"));
+}
+-----------------------------------------------------------------------------
+#define LIGHT_SENSOR_PIN 36 // ESP32 pin GIOP36 (ADC0)
+#define LIGHT_SENSOR_PIN 36  // ESP32 pin GIOP36 (ADC0)
+void setup() {
+  // initialize serial communication at 9600 bits per second:
+  Serial.begin(9600);
+}
+void loop() {
+  // reads the input on analog pin (value between 0 and 4095)
+  int analogValue = analogRead(LIGHT_SENSOR_PIN);
+  Serial.print("Analog Value = ");
+  Serial.print(analogValue);  // the raw analog reading
+  // We'll have a few threshholds, qualitatively determined
+  if (analogValue < 40) {
+    Serial.println(" => Dark");
+  } else if (analogValue < 800) {
+    Serial.println(" => Dim");
+  } else if (analogValue < 2000) {
+    Serial.println(" => Light");
+  } else if (analogValue < 3200) {
+    Serial.println(" => Bright");
+  } else {
+    Serial.println(" => Very bright");
+  }
+  delay(500);
+}
+-------------------------------------------------------------------------------------
+#define ADC_VREF_mV 3300.0  // in millivolt
+#define ADC_RESOLUTION 4096.0
+#define PIN_LM35 36  // ESP32 pin GIOP36 (ADC0) connected to LM35
+void setup() {
+  Serial.begin(9600);
+}
+void loop() {
+  // read the ADC value from the temperature sensor
+  int adcVal = analogRead(PIN_LM35);
+  // convert the ADC value to voltage in millivolt
+  float milliVolt = adcVal * (ADC_VREF_mV / ADC_RESOLUTION);
+  // convert the voltage to the temperature in °C
+  float tempC = milliVolt / 10;
+  // convert the °C to °F
+  float tempF = tempC * 9 / 5 + 32;
+  // print the temperature in the Serial Monitor:
+  Serial.print("Temperature: ");
+  Serial.print(tempC);  // print the temperature in °C
+  Serial.print("°C");
+  Serial.print(" ~ ");  // separator between °C and °F
+  Serial.print(tempF);  // print the temperature in °F
+  Serial.println("°F");
+  delay(500);
+}
+-----------------------------------------------------------------------------------
+/* LDR Sensor Experiment */
+int LDR = 34;             // LDR input at A0 pin.
+int LED = 4;              // LED is connected to PWM Pin 3.
+int LDRReading = 0;       // to store input value of LDR
+int lEDBrightness = 0;    // to store the value of LED Brightness
+int threshold_val = 800;  // Check your threshold and modify it.
+void setup() {
+  Serial.begin(9600);    // initializing serail communication.
+  pinMode(LED, OUTPUT);  // Defining LED pin as output.
+}
+void loop() {
+  LDRReading = analogRead(LDR);                        // Reading LDR Input.
+  Serial.println(LDRReading);                          // Printing LDR input value.
+  if (LDRReading > threshold_val) {                    // Condition to make LED ON.
+    lEDBrightness = map(LDRReading, 0, 1023, 0, 255);  // Converting LDR to LED Brightness.
+    analogWrite(LED, lEDBrightness);                   // Writing Brightness to LED.
+  } else {
+    analogWrite(LED, 0);  // If LDR is below threshold make LED OFF.
+  }
+  delay(300);  // delay to make output readable on serial monitor.
+}
+--------------------------------------------------------------------------------------
+
+import RPi.GPIO as GPIO
+import time
+led=2
+IRSensor =4
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(led, GPIO.OUT)
+GPIO.setup(IRSensor , GPIO.IN)
+while True:
+    if GPIO.input(IRSensor)==0:
+        GPIO.output(led,GPIO.HIGH)
+    else:
+        GPIO.output(led,GPIO.LOW)
+GPIO.cleanup()
+-----------------------------------------------------------------
+Code for taking pictures 5 times :
+import picamera
+from time import sleep
+camera = picamera.PiCamera()
+#set resolution
+camera.resolution = (1024, 768)
+camera.brightness = 60
+camera.start_preview()
+#add text on image
+camera.annotate_text = 'Hi Pi User'
+for i in range(5):
+    sleep(5)
+    camera.capture('/home/pi/Desktop/image%s.jpg' % i)
+camera.stop_preview()
+----------------------------------------------------------------------
+from smbus import SMBus
+
+# Initialize I2C bus
+addr = 0x8  # I2C address of Arduino slave
+bus = SMBus(1)  # Use I2C bus 1 (for Raspberry Pi)
+
+# Input prompt to control the LED
+print("Enter 1 for ON or 0 for OFF")
+
+while True:  # Run indefinitely until user inputs something invalid
+    ledstate = input(">>>> ")  # Get user input
+
+    if ledstate == "1":
+        bus.write_byte(addr, 0x1)  # Send '1' byte to turn LED on
+        print("LED is ON")
+    elif ledstate == "0":
+        bus.write_byte(addr, 0x0)  # Send '0' byte to turn LED off
+        print("LED is OFF")
+    else:
+        print("Invalid input. Exiting...")
+        break  # Exit the loop if input is not '1' or '0'
+
+------------------------------------------------------------------------
+
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+#define Ledpin 13    // LED pin
+#define IRpin 14     // IR sensor pin
+
+// WiFi credentials
+const char* ssid = "ssid";
+const char* password = "password";
+
+// MQTT Broker IP address
+const char* mqtt_server = "192.168.173.114";
+
+char tempString[20]; // Buffer to hold the message
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Callback function when a message is received
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.print("Message arrived on topic: ");
+  Serial.println(topic);
+
+  // Create a temporary string to hold the message
+  String messageTemp;
+  for (int i = 0; i < length; i++) {
+    messageTemp += (char)message[i];
+  }
+
+  Serial.print("Message: ");
+  Serial.println(messageTemp);
+
+  // Check if the received topic is the acknowledgment topic
+  if (String(topic) == "ESP32/Acknowledgement") {
+    Serial.println("Acknowledgment received from Raspberry Pi!");
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(Ledpin, OUTPUT);
+  pinMode(IRpin, INPUT);
+
+  // Connect to WiFi
+  Serial.println("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Connected to WiFi with IP: ");
+  Serial.println(WiFi.localIP());
+
+  // Setup MQTT client and set callback
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+
+  // Connect to the MQTT broker
+  while (!client.connected()) {
+    Serial.println("Connecting to MQTT...");
+    if (client.connect("espClient")) {
+      Serial.println("Connected to MQTT broker");
+      client.subscribe("ESP32/Acknowledgement");  // Subscribe to acknowledgment topic
+    } else {
+      Serial.print("Failed to connect, state: ");
+      Serial.println(client.state());
+      delay(2000);
+    }
+  }
+}
+
+void loop() {
+  // Ensure the MQTT client stays connected and processes incoming messages
+  client.loop();
+
+  // Read IR sensor status
+  bool IRstatus = digitalRead(IRpin);
+  
+  // Check IR sensor status and control LED accordingly
+  if (IRstatus == HIGH) {
+    digitalWrite(Ledpin, LOW);  // IR sensor detects something, turn off LED
+    strcpy(tempString, "LED OFF");
+  } else {
+    digitalWrite(Ledpin, HIGH);  // No detection, turn on LED
+    strcpy(tempString, "LED ON");
+  }
+
+  // Publish the LED status to the MQTT topic
+  client.publish("ESP32/LEDstatus", tempString);  // Changed topic name for clarity
+
+  delay(2000);  // Wait for 2 seconds before next check
+}
+
+--------------------------------------------------------------------------------------
+// Include the Wire library for I2C communication
+#include <Wire.h>
+
+const int ledPin = 13;  // Define the pin for the LED
+
+void setup() {
+  // Initialize I2C communication with the specified address (0x8)
+  Wire.begin(0x8);
+  
+  // Attach the function to be called when data is received from the master
+  Wire.onReceive(receiveEvent);
+  
+  // Set the LED pin as an OUTPUT
+  pinMode(ledPin, OUTPUT);
+  
+  // Initially turn off the LED
+  digitalWrite(ledPin, LOW);
+}
+
+// Function that executes whenever data is received from the master
+void receiveEvent(int n) {
+  // Loop through all received bytes (but not the last one)
+  while (Wire.available()) {
+    // Read a byte of data as a character
+    char c = Wire.read();
+    
+    // If the received character is '1', turn the LED on; otherwise, turn it off
+    digitalWrite(ledPin, c);
+  }
+}
+
+void loop() {
+  // The loop is left empty as the I2C communication is handled in the interrupt
+  delay(100);  // Add a small delay to prevent overwhelming the microcontroller
+}
+
+-----------------------------------------------------------------------
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "ssid";  // Replace with your SSID
+const char* password = "password";  // Replace with your Wi-Fi password
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Connecting to Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println("Timer set to 5 seconds (timerDelay variable), it will take 5 seconds before publishing the first reading.");
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+
+    // Begin HTTP GET request to the specified URL
+    http.begin("http://192.168.43.53:8000/get-sensor?temperature=243");
+    
+    int httpCode = http.GET();  // Send GET request
+
+    if (httpCode > 0) {
+      String payload = http.getString();
+      Serial.println(httpCode);  // Print the HTTP response code
+      Serial.println(payload);    // Print the response payload
+    }
+    else {
+      Serial.println("Error on HTTP request");
+    }
+
+    http.end();  // End the HTTP request
+  } else {
+    // In case of no Wi-Fi connection
+  }
+  
+  delay(10000);  // Wait for 10 seconds before the next request
+}
+sudo systemctl enable mosquitto.server
+mosquitto_sub -d -t ESP32/IR_LED
+
+sudo systemctl enable mosquitto
+sudo systemctl start mosquitto
+
+------------------------------------------------------------------------------------------
+
+#include <WiFi.h>
+#include "ThingSpeak.h"
+
+// Define constants for ADC and LM35 sensor
+#define ADC_VREF_mV 3300.0  // in millivolt
+#define ADC_RESOLUTION 4096.0
+#define PIN_LM35 36  // ESP32 pin GIOP36 (ADC0) connected to LM35 sensor
+
+// Wi-Fi credentials
+const char* ssid = "REPLACE_WITH_YOUR_SSID";  // your network SSID
+const char* password = "REPLACE_WITH_YOUR_PASSWORD";  // your network password
+
+WiFiClient client;
+unsigned long myChannelNumber = xxxx;  // your ThingSpeak channel number
+const char* myWriteAPIKey = "XXXXXXXXXXXXXXXX";  // your ThingSpeak Write API key
+
+// Timer variables
+unsigned long lastTime = 0;
+unsigned long timerDelay = 30000;  // 30 seconds delay
+
+// Variable to hold temperature readings
+float tempC;
+
+void setup() {
+  pinMode(PIN_LM35, INPUT);
+  Serial.begin(115200);  // Initialize serial communication for debugging
+  WiFi.mode(WIFI_STA);
+  ThingSpeak.begin(client);  // Initialize ThingSpeak
+}
+
+void loop() {
+  if ((millis() - lastTime) > timerDelay) {
+    // Connect or reconnect to Wi-Fi
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.print("Attempting to connect");
+      while (WiFi.status() != WL_CONNECTED) {
+        WiFi.begin(ssid, password);  // Attempt to connect to Wi-Fi
+        delay(5000);  // Wait 5 seconds before retrying
+      }
+      Serial.println("\nConnected.");
+    }
+
+    // Get a new temperature reading from the LM35 sensor
+    int adcVal = analogRead(PIN_LM35);
+    
+    // Convert the ADC value to voltage in millivolt
+    float milliVolt = adcVal * (ADC_VREF_mV / ADC_RESOLUTION);
+    
+    // Convert the voltage to temperature in °C
+    tempC = milliVolt / 10;
+    
+    // Print the temperature to the Serial Monitor for debugging
+    Serial.print("Temperature (ºC): ");
+    Serial.println(tempC);
+
+    // Write the temperature to ThingSpeak
+    int x = ThingSpeak.writeField(myChannelNumber, 1, tempC, myWriteAPIKey);
+
+    // Check if the channel update was successful
+    if (x == 200) {
+      Serial.println("Channel update successful.");
+    } else {
+      Serial.println("Problem updating channel. HTTP error code " + String(x));
+    }
+
+    // Update the lastTime to the current time
+    lastTime = millis();
+  }
+}
+sudo systemctl enable mosquitto.server
+mosquitto_sub -d -t ESP32/IR_LED
+
+sudo systemctl enable mosquitto
+sudo systemctl start mosquitto
+
+-------------------------------------------------------------------------------------------
+#include <WiFi.h>
+#include "ThingSpeak.h"
+#include "DHT.h"
+
+// Define the pin for the DHT sensor and its type
+#define DHTPIN 4
+#define DHTTYPE DHT11 // Use DHT11 or DHT22
+
+DHT dht(DHTPIN, DHTTYPE);  // Initialize the DHT sensor
+
+// Wi-Fi credentials
+const char* ssid = "REPLACE_WITH_YOUR_SSID";  // your network SSID
+const char* password = "REPLACE_WITH_YOUR_PASSWORD";  // your network password
+
+WiFiClient client;
+unsigned long myChannelNumber = xxxx;  // your ThingSpeak channel number
+const char* myWriteAPIKey = "XXXXXXXXXXXXXXXX";  // your ThingSpeak Write API key
+
+// Timer variables
+unsigned long lastTime = 0;
+unsigned long timerDelay = 30000;  // 30 seconds delay
+
+// Variables to hold temperature and humidity readings
+float tempC, humidity;
+
+void setup() {
+  pinMode(DHTPIN, INPUT);
+  Serial.begin(115200);  // Initialize serial communication for debugging
+  WiFi.mode(WIFI_STA);  // Set Wi-Fi mode to Station (connect to an access point)
+  ThingSpeak.begin(client);  // Initialize ThingSpeak
+}
+
+void loop() {
+  if ((millis() - lastTime) > timerDelay) {
+    // Connect or reconnect to Wi-Fi if not already connected
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.print("Attempting to connect");
+      while (WiFi.status() != WL_CONNECTED) {
+        WiFi.begin(ssid, password);  // Attempt to connect to Wi-Fi
+        delay(5000);  // Wait for 5 seconds before retrying
+      }
+      Serial.println("\nConnected.");
+    }
+
+    // Get a new temperature and humidity reading from the DHT sensor
+    tempC = dht.readTemperature();
+    humidity = dht.readHumidity();
+
+    // Print the readings to the Serial Monitor for debugging
+    Serial.print("Temperature (ºC): ");
+    Serial.println(tempC);
+    Serial.print("Humidity (%): ");
+    Serial.println(humidity);
+
+    // Set the fields for ThingSpeak with the temperature and humidity values
+    ThingSpeak.setField(1, tempC);  // Field 1 for temperature
+    ThingSpeak.setField(2, humidity);  // Field 2 for humidity
+
+    // Write the data to ThingSpeak
+    int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+
+    // Check if the channel update was successful
+    if (x == 200) {
+      Serial.println("Channel update successful.");
+    } else {
+      Serial.println("Problem updating channel. HTTP error code " + String(x));
+    }
+
+    // Update the last time the data was sent
+    lastTime = millis();
+  }
+}
+
+------------------------------------------------------------------------------------
+//Mutex
+SemaphoreHandle_t semvar;
+
+void setup() {
+  Serial.begin(115200);
+
+  if (semvar == NULL) {
+    semvar = xSemaphoreCreateBinary();  // Create a binary semaphore
+    if (semvar != NULL) {
+      xSemaphoreGive(semvar);  // Give the semaphore to make it available
+    }
+  }
+
+  xTaskCreate(TaskLed, "Led", 10000, NULL, 1, NULL);      // Create the LED task
+  xTaskCreate(TaskBlink, "LedBlink", 10000, NULL, 1, NULL);  // Create the LED blink task
+}
+
+void loop() {
+  // Nothing to do here, tasks are managed by FreeRTOS
+}
+
+void TaskLed(void *pvParameters) {
+  Serial.println("inside taskled");
+  pinMode(8, OUTPUT);
+
+  for (;;) {
+    if (xSemaphoreTake(semvar, (TickType_t) 5) == pdTRUE) {
+      Serial.println("semaphore taken inside taskled");
+      digitalWrite(8, HIGH);
+      delay(5000);  // Delay for 5 seconds
+      xSemaphoreGive(semvar);  // Release the semaphore
+    } else {
+      digitalWrite(8, LOW);  // If semaphore is not taken, turn off LED
+    }
+  }
+}
+
+void TaskBlink(void *pvParameters) {
+  Serial.println("inside taskblink");
+  pinMode(7, OUTPUT);
+
+  for (;;) {
+    if (xSemaphoreTake(semvar, (TickType_t) 10) == pdTRUE) {
+      Serial.println("semaphore taken inside taskblink");
+      digitalWrite(7, HIGH);
+      delay(5000);  // Delay for 5 seconds
+      xSemaphoreGive(semvar);  // Release the semaphore
+      delay(1000);  // Wait for 1 second before trying again
+    } else {
+      digitalWrite(7, LOW);  // If semaphore is not taken, turn off LED
+    }
+  }
+}
+
+--------------------------------------------------------------------------------------
+//Task Scheduling
+TaskHandle_t xHandle1, xHandle2;
+
+void setup() {
+  Serial.begin(115200);
+  xTaskCreate(taskOne, "TaskOne", 10000, NULL, 1, &xHandle1);
+  Serial.println("inside setup");
+}
+
+void loop() {
+  delay(1000);
+}
+
+void taskOne(void *parameter) {
+  int i = 0;
+  Serial.println("Hello from task 1");
+
+  while (i < 4) {
+    Serial.print("Task 1:"); 
+    Serial.println(i);
+
+    if (i == 2) {
+      xTaskCreate(taskTwo, "TaskTwo", 10000, NULL, 2, &xHandle2);
+    }
+
+    i++;
+  }
+
+  Serial.println("Ending task 1");
+  vTaskDelete(NULL);  // Delete taskOne after completion
+}
+
+void taskTwo(void *parameter) {
+  int i = 0;
+  Serial.println("Hello from task 2");
+
+  while (i < 4) {
+    Serial.print("Task 2:");
+    Serial.println(i);
+    i++;
+  }
+
+  Serial.println("Ending task 2");
+  vTaskDelete(NULL);  // Delete taskTwo after completion
+}
+------------------------------------------------------------------------
+from flask import Flask, request
+app = Flask(__name__)
+l = []
+@app.route('/')
+def index():
+return 'OK', 200
+@app.route('/get-sensor', methods=['GET'])
+def data():
+if request.method == 'GET':
+args = request.args
+temperature = args.get('temperature')
+l.append(temperature)
+return temperature
+else:
+return 'Wrong'
+@app.route('/get')
+def data1():
+sensor_data = '<ul>'
+for item in l:
+sensor_data += f'<li>{item}</li>'
+sensor_data += '</ul>'
+return sensor_data
+if __name__ == '__main__':
+app.run(debug=True, port=8000, host='0.0.0.0')
+----------------------------------------------------------------------------
+
+
